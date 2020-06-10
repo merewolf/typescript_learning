@@ -1,133 +1,139 @@
-type Admin = {
-  name: string;
-  privileges: string[];
-};
-
-type Employee = {
-  name: string;
-  startDate: Date;
-};
-
-type ElevatedEmployee = Admin & Employee;
-
-const e1: ElevatedEmployee = {
-  name: 'Roman',
-  privileges: ['mess-around'],
-  startDate: new Date(),
-};
-
-type Combinable = string | number;
-type Numeric = number | boolean;
-
-type Universal = Combinable & Numeric;
-
-function add2(a: number, b: number): number;
-function add2(a: string, b: string): string;
-function add2(a: Combinable, b: Combinable) {
-  if (typeof a === 'string' || typeof b === 'string') {
-    return a.toString() + b.toString();
-  }
-  return a + b;
+function Logger(logString: string) {
+  return function (constructor: Function) {
+    console.log(logString);
+    console.log(constructor);
+  };
 }
 
-const result = add(1, 5);
-
-type UnknownEmployee = Employee | Admin;
-
-function printEmployeeInformation(e: UnknownEmployee) {
-  if ('privileges' in e) {
-    console.log('Privileges: ' + e.privileges);
-  }
-  if ('startDate' in e) {
-    console.log('Start date: ' + e.startDate);
-  }
-  console.log('Name: ' + e.name);
+function WithTemplate(template: string, hookId: string) {
+  console.log('TEMPLATE FACTORY');
+  return function <T extends { new (...args: any[]): { name: string } }>(
+    originalConstructor: T
+  ) {
+    return class extends originalConstructor {
+      constructor(..._: any[]) {
+        super();
+        console.log('rendering template');
+        const hookEl = document.getElementById(hookId);
+        if (hookEl) {
+          hookEl.innerHTML = template;
+          hookEl.querySelector('h1')!.textContent = this.name;
+        }
+      }
+    };
+  };
 }
 
-class Car {
-  drive() {
-    console.log('Driving...');
+@Logger('LOGGING - PERSONCLASS')
+@WithTemplate('<h1>whatup doggg?</h1>', 'app')
+class PersonClass {
+  name = 'Roman';
+  constructor() {
+    console.log('Creating person object');
   }
 }
 
-class Truck {
-  drive() {
-    console.log('Driving a truck...');
+const pers = new PersonClass();
+
+console.log(pers);
+
+// ---
+
+function Log(target: any, propertyName: string | symbol) {
+  console.log('Property decorator!');
+  console.log(target, propertyName);
+}
+
+function Log2(target: any, name: string, descriptor: PropertyDescriptor) {
+  console.log('Accessor decorator!');
+  console.log(target);
+  console.log(name);
+  console.log(descriptor);
+}
+
+function Log3(target: any, name: string, descriptor: PropertyDescriptor) {
+  console.log('Method decorator!');
+  console.log(target);
+  console.log(name);
+  console.log(descriptor);
+}
+
+function Log4(target: any, name: string, position: number) {
+  console.log('Argument decorator!');
+  console.log(target);
+  console.log(name);
+  console.log(position);
+}
+
+class Product {
+  @Log
+  title: string;
+  private _price: number;
+
+  @Log2
+  set price(val: number) {
+    if (val > 0) {
+      this._price = val;
+    } else {
+      throw new Error('Invalid price - should be positive!');
+    }
   }
 
-  loadCargo(amount: number) {
-    console.log('Loading cargo ' + amount);
+  constructor(t: string, p: number) {
+    this.title = t;
+    this._price = p;
+  }
+
+  @Log3
+  getPriceWithTax(@Log4 tax: number) {
+    return this._price * (1 + tax);
   }
 }
 
-type Vehicle = Car | Truck;
+function Autobind(_: any, _2: string, descriptor: PropertyDescriptor) {
+  const originalMethod = descriptor.value;
+  const adjDescriptor: PropertyDescriptor = {
+    get() {
+      const boundFn = originalMethod.bind(this);
+      return boundFn;
+    },
+  };
+  return adjDescriptor;
+}
 
-const v1 = new Car();
-const v2 = new Truck();
+class Printer {
+  message = 'This works!';
 
-function useVehicle(vehicle: Vehicle) {
-  vehicle.drive();
-  if (vehicle instanceof Truck) {
-    vehicle.loadCargo(1000);
+  @Autobind
+  showMessage() {
+    console.log(this.message);
   }
 }
 
-useVehicle(v1);
-useVehicle(v2);
+const p = new Printer();
+const button = document.querySelector('button')!;
+button.addEventListener('click', p.showMessage);
 
-interface Bird {
-  type: 'bird';
-  flyingSpeed: number;
-}
 
-interface Horse {
-  type: 'horse';
-  runningSpeed: number;
-}
+class Course {
+  title: string;
+  price: number;
 
-type Animal = Bird | Horse;
-
-function moveAnimal(animal: Animal) {
-  let speed;
-  switch (animal.type) {
-    case 'bird':
-      speed = animal.flyingSpeed;
-      break;
-    case 'horse':
-      speed = animal.runningSpeed;
-      break;
+  constructor(t: string, p: number) {
+    this.title = t;
+    this.price = p;
   }
-  console.log('Moving at speed: ' + speed);
 }
 
-moveAnimal({ type: 'bird', flyingSpeed: 30 });
+const courseForm = document.querySelector('form')!;
+courseForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const titleEl = document.getElementById('title') as HTMLInputElement;
+  const priceEl = document.getElementById('price') as HTMLInputElement;
 
-// const userInputElement =<HTMLInputElement>document.getElementById('user-input')!;
-const userInputElement = document.getElementById(
-  'user-input'
-)! as HTMLInputElement;
+  const title = titleEl.value;
+  const price = +priceEl.value;
 
-userInputElement.value = 'Hi there!';
-
-interface ErrorContainer {
-  [prop: string]: string;
-}
-
-const errorBag: ErrorContainer = {
-  email: 'Not a valid email',
-  username: 'Must start with a capital character!',
-};
-
-const fetchedUserData = {
-  id: 'u1',
-  name: 'Mina',
-  job: { title: 'CEO', description: 'My own company' },
-};
-
-console.log(fetchedUserData?.job?.title);
-
-const userInput = null;
-
-const storeData = userInput ?? 'DEFAULT';
-
-console.log(storeData);
+  const createdCourse = new Course(title, price);
+  console.log(createdCourse);
+});
